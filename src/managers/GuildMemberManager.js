@@ -503,17 +503,17 @@ class GuildMemberManager extends CachedManager {
 
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
-      const fetchRec = async (dict, query) => {
+      const fetchRec = async (query) => {
         const req = await this._fetchMany({ query, limit }).catch(reject);
         await this.guild.client.sleep(delay);
         if (req?.size === 100) {
           for (const query2 of dictionary) {
-            await fetchRec(dict, query + query2);
+            await fetchRec(query + query2);
           }
         }
       };
       for (const query of dictionary) {
-        await fetchRec(dictionary, query);
+        await fetchRec(query);
       }
       resolve(this.guild.members.cache);
     });
