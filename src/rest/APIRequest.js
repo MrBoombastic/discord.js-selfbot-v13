@@ -4,7 +4,7 @@ const Buffer = require('node:buffer').Buffer;
 const https = require('node:https');
 const { setTimeout } = require('node:timers');
 const FormData = require('form-data');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch')
 
 let agent = null;
 
@@ -46,7 +46,6 @@ class APIRequest {
     let headers = {
       ...this.client.options.http.headers,
       Accept: '*/*',
-      origin: 'https://discord.com',
       'Accept-Language': 'en-US',
       'Sec-Fetch-Dest': 'empty',
       'Sec-Fetch-Mode': 'cors',
