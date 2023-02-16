@@ -497,11 +497,20 @@ class GuildMemberManager extends CachedManager {
         `[WARNING] GuildMemberManager#fetchBruteforce: delay is less than 500ms, this may cause rate limits.`,
       );
     }
+
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
-      for (const query of dictionary) {
-        await this._fetchMany({ query, limit }).catch(reject);
+      const fetchRec = async (dict, query) => {
+        const req = await this._fetchMany({ query, limit }).catch(reject);
         await this.guild.client.sleep(delay);
+        if (req?.size === 100) {
+          for (const query2 of dictionary) {
+            await fetchRec(dict, query + query2);
+          }
+        }
+      };
+      for (const query of dictionary) {
+        await fetchRec(dictionary, query);
       }
       resolve(this.guild.members.cache);
     });
