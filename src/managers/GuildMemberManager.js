@@ -662,7 +662,8 @@ class GuildMemberManager extends CachedManager {
       const timeout = setTimeout(() => {
         this.client.removeListener(Events.GUILD_MEMBERS_CHUNK, handler);
         this.client.decrementMaxListeners();
-        reject(new Error('GUILD_MEMBERS_TIMEOUT'));
+        console.warn('GUILD_MEMBERS_TIMEOUT');
+        console.warn("Members didn't arrive in time. Increase delay time! For now, some members are skipped.")
       }, time).unref();
       this.client.incrementMaxListeners();
       this.client.on(Events.GUILD_MEMBERS_CHUNK, handler);
