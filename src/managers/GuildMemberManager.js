@@ -199,12 +199,12 @@ class GuildMemberManager extends CachedManager {
         this.guild.members.me.permissions.has('MANAGE_ROLES')
       ) {
         return this._fetchMany();
-      } else {
+      } /*else {
         return this.fetchBruteforce({
           delay: 50,
           skipWarn: true,
         });
-      }
+      }*/
     }
     const user = this.client.users.resolveId(options);
     if (user) return this._fetchSingle({ user, cache: true });
