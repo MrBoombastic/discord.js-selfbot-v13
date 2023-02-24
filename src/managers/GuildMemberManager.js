@@ -11,6 +11,7 @@ const { Role } = require('../structures/Role');
 const { Events, Opcodes } = require('../util/Constants');
 const { PartialTypes } = require('../util/Constants');
 const DataResolver = require('../util/DataResolver');
+const GuildMemberFlags = require('../util/GuildMemberFlags');
 const SnowflakeUtil = require('../util/SnowflakeUtil');
 
 /**
@@ -191,8 +192,7 @@ class GuildMemberManager extends CachedManager {
    * @see {@link https://github.com/aiko-chan-ai/discord.js-selfbot-v13/blob/main/Document/FetchGuildMember.md}
    */
   fetch(options) {
-    if (!options || (!options?.query && !options?.user)) {
-      // Check Permissions
+    if (!options || (typeof options === 'object' && !('user' in options) && !('query' in options))) {
       if (
         this.guild.members.me.permissions.has('KICK_MEMBERS') ||
         this.guild.members.me.permissions.has('BAN_MEMBERS') ||
@@ -276,6 +276,7 @@ class GuildMemberManager extends CachedManager {
    * (if they are connected to voice), or `null` if you want to disconnect them from voice
    * @property {DateResolvable|null} [communicationDisabledUntil] The date or timestamp
    * for the member's communication to be disabled until. Provide `null` to enable communication again.
+   * @property {GuildMemberFlagsResolvable} [flags] The flags to set for the member
    * @property {?(BufferResolvable|Base64Resolvable)} [avatar] The new guild avatar
    * @property {?(BufferResolvable|Base64Resolvable)} [banner] The new guild banner
    * @property {?string} [bio] The new guild about me
@@ -310,6 +311,8 @@ class GuildMemberManager extends CachedManager {
 
     _data.communication_disabled_until =
       _data.communicationDisabledUntil && new Date(_data.communicationDisabledUntil).toISOString();
+
+    _data.flags = _data.flags && GuildMemberFlags.resolve(_data.flags);
 
     // Avatar, banner, bio
     if (typeof _data.avatar !== 'undefined') {
@@ -617,6 +620,38 @@ class GuildMemberManager extends CachedManager {
         },
       });
     });
+  }
+
+  /**
+   * Adds a role to a member.
+   * @param {GuildMemberResolvable} user The user to add the role from
+   * @param {RoleResolvable} role The role to add
+   * @param {string} [reason] Reason for adding the role
+   * @returns {Promise<GuildMember|User|Snowflake>}
+   */
+  async addRole(user, role, reason) {
+    const userId = this.guild.members.resolveId(user);
+    const roleId = this.guild.roles.resolveId(role);
+
+    await this.client.api.guilds(this.guild.id).members(userId).roles(roleId).put({ reason });
+
+    return this.resolve(user) ?? this.client.users.resolve(user) ?? userId;
+  }
+
+  /**
+   * Removes a role from a member.
+   * @param {UserResolvable} user The user to remove the role from
+   * @param {RoleResolvable} role The role to remove
+   * @param {string} [reason] Reason for removing the role
+   * @returns {Promise<GuildMember|User|Snowflake>}
+   */
+  async removeRole(user, role, reason) {
+    const userId = this.guild.members.resolveId(user);
+    const roleId = this.guild.roles.resolveId(role);
+
+    await this.client.api.guilds(this.guild.id).members(userId).roles(roleId).delete({ reason });
+
+    return this.resolve(user) ?? this.client.users.resolve(user) ?? userId;
   }
 
   _fetchMany({

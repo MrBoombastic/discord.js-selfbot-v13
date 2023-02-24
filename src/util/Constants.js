@@ -219,7 +219,9 @@ exports.Endpoints = {
         makeImageUrl(`${root}/discovery-splashes/${guildId}/${hash}`, { size, format }),
       TeamIcon: (teamId, hash, options) => makeImageUrl(`${root}/team-icons/${teamId}/${hash}`, options),
       Sticker: (stickerId, stickerFormat) =>
-        `${root}/stickers/${stickerId}.${stickerFormat === 'LOTTIE' ? 'json' : 'png'}`,
+        `${root}/stickers/${stickerId}.${
+          stickerFormat === 'LOTTIE' ? 'json' : stickerFormat === 'GIF' ? 'gif' : 'png'
+        }`,
       RoleIcon: (roleId, hash, format = 'webp', size) =>
         makeImageUrl(`${root}/role-icons/${roleId}/${hash}`, { size, format }),
       guildScheduledEventCover: (scheduledEventId, coverHash, format, size) =>
@@ -333,6 +335,7 @@ exports.Opcodes = {
  * * APPLICATION_COMMAND_CREATE: applicationCommandCreate (deprecated)
  * * APPLICATION_COMMAND_DELETE: applicationCommandDelete (deprecated)
  * * APPLICATION_COMMAND_UPDATE: applicationCommandUpdate (deprecated)
+ * * APPLICATION_COMMAND_PERMISSIONS_UPDATE: applicationCommandPermissionsUpdate
  * * AUTO_MODERATION_ACTION_EXECUTION: autoModerationActionExecution
  * * AUTO_MODERATION_RULE_CREATE: autoModerationRuleCreate
  * * AUTO_MODERATION_RULE_DELETE: autoModerationRuleDelete
@@ -423,6 +426,7 @@ exports.Events = {
   APPLICATION_COMMAND_CREATE: 'applicationCommandCreate',
   APPLICATION_COMMAND_DELETE: 'applicationCommandDelete',
   APPLICATION_COMMAND_UPDATE: 'applicationCommandUpdate',
+  APPLICATION_COMMAND_PERMISSIONS_UPDATE: 'applicationCommandPermissionsUpdate',
   AUTO_MODERATION_ACTION_EXECUTION: 'autoModerationActionExecution',
   AUTO_MODERATION_RULE_CREATE: 'autoModerationRuleCreate',
   AUTO_MODERATION_RULE_DELETE: 'autoModerationRuleDelete',
@@ -555,6 +559,7 @@ exports.PartialTypes = keyMirror(['USER', 'CHANNEL', 'GUILD_MEMBER', 'MESSAGE', 
  * * APPLICATION_COMMAND_CREATE (deprecated)
  * * APPLICATION_COMMAND_DELETE (deprecated)
  * * APPLICATION_COMMAND_UPDATE (deprecated)
+ * * APPLICATION_COMMAND_PERMISSIONS_UPDATE
  * * AUTO_MODERATION_ACTION_EXECUTION
  * * AUTO_MODERATION_RULE_CREATE
  * * AUTO_MODERATION_RULE_DELETE
@@ -620,6 +625,7 @@ exports.WSEvents = keyMirror([
   'APPLICATION_COMMAND_CREATE',
   'APPLICATION_COMMAND_DELETE',
   'APPLICATION_COMMAND_UPDATE',
+  'APPLICATION_COMMAND_PERMISSIONS_UPDATE',
   'AUTO_MODERATION_ACTION_EXECUTION',
   'AUTO_MODERATION_RULE_CREATE',
   'AUTO_MODERATION_RULE_DELETE',
@@ -1431,10 +1437,11 @@ exports.StickerTypes = createEnum([null, 'STANDARD', 'GUILD']);
  * * PNG
  * * APNG
  * * LOTTIE
+ * * GIF
  * @typedef {string} StickerFormatType
  * @see {@link https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-format-types}
  */
-exports.StickerFormatTypes = createEnum([null, 'PNG', 'APNG', 'LOTTIE']);
+exports.StickerFormatTypes = createEnum([null, 'PNG', 'APNG', 'LOTTIE', 'GIF']);
 
 /**
  * An overwrite type:

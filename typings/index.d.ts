@@ -239,6 +239,20 @@ export class DiscordAuthWebsocket extends EventEmitter {
   public on(event: 'closed', listener: (token?: string) => void): this;
   public on(event: string, listener: (...args: any[]) => Awaitable<void>): this;
 }
+
+export class DiscordRPCServer extends EventEmitter {
+  constructor(client: Client, debug?: boolean);
+  public debug?: boolean;
+  public client: Client;
+  public on(event: 'activity', listener: (data: RPCActivityData) => void): this;
+}
+
+export interface RPCActivityData {
+  activity?: RichPresence;
+  pid: number;
+  socketId: string;
+}
+
 export interface DiscordAuthWebsocketOptions {
   debug: boolean;
   hiddenLog: boolean;
@@ -1031,6 +1045,7 @@ export class ClientUser extends User {
   public setDeaf(status: boolean): Promise<boolean>;
   public setMute(status: boolean): Promise<boolean>;
   public getInvite(options?: CreateInviteOptions): Promise<Invite>;
+  public setSamsungActivity(packageName: string, type?: 'START' | 'UPDATE' | 'STOP'): Promise<this>;
   public getMentions(
     limit?: number,
     mentionRoles?: boolean,
@@ -1325,6 +1340,7 @@ export class Guild extends AnonymousGuild {
   private _sortedChannels(channel: NonThreadGuildBasedChannel): Collection<Snowflake, NonThreadGuildBasedChannel>;
 
   public readonly afkChannel: VoiceChannel | null;
+  public topEmojis(): Promise<Collection<number, Emoji>>;
   public afkChannelId: Snowflake | null;
   public afkTimeout: number;
   public applicationId: Snowflake | null;
@@ -1573,6 +1589,7 @@ export class GuildMember extends PartialTextBasedChannel(Base) {
   public readonly displayColor: number;
   public readonly displayHexColor: HexColorString;
   public readonly displayName: string;
+  public flags: Readonly<GuildMemberFlags>;
   public guild: Guild;
   public readonly id: Snowflake;
   public pending: boolean;
@@ -1610,6 +1627,7 @@ export class GuildMember extends PartialTextBasedChannel(Base) {
   public kick(reason?: string): Promise<GuildMember>;
   public permissionsIn(channel: GuildChannelResolvable): Readonly<Permissions>;
   public setNickname(nickname: string | null, reason?: string): Promise<GuildMember>;
+  public setFlags(flags: GuildMemberFlagsResolvable): Promise<GuildMember>;
   public setAvatar(avatar: BufferResolvable | Base64Resolvable | null): Promise<GuildMember>;
   public setBanner(banner: BufferResolvable | Base64Resolvable | null): Promise<GuildMember>;
   public setAboutMe(bio: string | null): Promise<GuildMember>;
@@ -1618,6 +1636,11 @@ export class GuildMember extends PartialTextBasedChannel(Base) {
   public toString(): MemberMention;
   public valueOf(): string;
   public setThemeColors(primary?: ColorResolvable, accent?: ColorResolvable): GuildMember;
+}
+
+export class GuildMemberFlags extends BitField<GuildMemberFlagsString> {
+  public static FLAGS: Record<GuildMemberFlagsString, number>;
+  public static resolve(bit?: BitFieldResolvable<GuildMemberFlagsString, number>): number;
 }
 
 export class GuildPreview extends Base {
@@ -3906,6 +3929,11 @@ export class GuildChannelManager extends CachedManager<Snowflake, GuildBasedChan
     name: string,
     options?: ChannelWebhookCreateOptions,
   ): Promise<Webhook>;
+  public addFollower(
+    channel: NewsChannel | Snowflake,
+    targetChannel: TextChannelResolvable,
+    reason?: string,
+  ): Promise<Snowflake>;
   public edit(channel: GuildChannelResolvable, data: ChannelData, reason?: string): Promise<GuildChannel>;
   public fetch(id: Snowflake, options?: BaseFetchOptions): Promise<GuildBasedChannel | null>;
   public fetch(
@@ -3994,6 +4022,12 @@ export class GuildMemberManager extends CachedManager<Snowflake, GuildMember, Gu
   public prune(options?: GuildPruneMembersOptions): Promise<number>;
   public search(options: GuildSearchMembersOptions): Promise<Collection<Snowflake, GuildMember>>;
   public unban(user: UserResolvable, reason?: string): Promise<User | null>;
+  public addRole(user: UserResolvable, role: RoleResolvable, reason?: string): Promise<GuildMember | User | Snowflake>;
+  public removeRole(
+    user: UserResolvable,
+    role: RoleResolvable,
+    reason?: string,
+  ): Promise<GuildMember | User | Snowflake>;
 }
 
 export class GuildBanManager extends CachedManager<Snowflake, GuildBan, GuildBanResolvable> {
@@ -4572,6 +4606,7 @@ export interface ClientEvents extends BaseClientEvents {
   applicationCommandDelete: [command: ApplicationCommand];
   /** @deprecated See [this issue](https://github.com/discord/discord-api-docs/issues/3690) for more information. */
   applicationCommandUpdate: [oldCommand: ApplicationCommand | null, newCommand: ApplicationCommand];
+  applicationCommandPermissionsUpdate: [data: ApplicationCommandPermissionsUpdateData];
   autoModerationActionExecution: [autoModerationActionExecution: AutoModerationActionExecution];
   autoModerationRuleCreate: [autoModerationRule: AutoModerationRule];
   autoModerationRuleDelete: [autoModerationRule: AutoModerationRule];
@@ -4698,6 +4733,7 @@ export interface ConstantsEvents {
   APPLICATION_COMMAND_DELETE: 'applicationCommandDelete';
   /** @deprecated See [this issue](https://github.com/discord/discord-api-docs/issues/3690) for more information. */
   APPLICATION_COMMAND_UPDATE: 'applicationCommandUpdate';
+  APPLICATION_COMMAND_PERMISSIONS_UPDATE: 'applicationCommandPermissionsUpdate';
   CALL_CREATE: 'callCreate';
   CALL_DELETE: 'callDelete';
   CALL_UPDATE: 'callUpdate';
@@ -5199,6 +5235,13 @@ export interface ApplicationCommandPermissionData {
   id: Snowflake;
   type: ApplicationCommandPermissionType | ApplicationCommandPermissionTypes;
   permission: boolean;
+}
+
+export interface ApplicationCommandPermissionsUpdateData {
+  permissions: ApplicationCommandPermissions;
+  id: Snowflake;
+  guildId: Snowflake;
+  applicationId: Snowflake;
 }
 
 export interface ApplicationCommandPermissions extends ApplicationCommandPermissionData {
@@ -5935,6 +5978,7 @@ interface GuildAuditLogsTypes {
   THREAD_CREATE: ['THREAD', 'CREATE'];
   THREAD_UPDATE: ['THREAD', 'UPDATE'];
   THREAD_DELETE: ['THREAD', 'DELETE'];
+  APPLICATION_COMMAND_PERMISSION_UPDATE: ['APPLICATION_COMMAND_PERMISSION', 'UPDATE'];
   AUTO_MODERATION_RULE_CREATE: ['AUTO_MODERATION', 'CREATE'];
   AUTO_MODERATION_RULE_UPDATE: ['AUTO_MODERATION', 'UPDATE'];
   AUTO_MODERATION_RULE_DELETE: ['AUTO_MODERATION', 'DELETE'];
@@ -5991,6 +6035,7 @@ export interface GuildAuditLogsIds {
   110: 'THREAD_CREATE';
   111: 'THREAD_UPDATE';
   112: 'THREAD_DELETE';
+  121: 'APPLICATION_COMMAND_PERMISSION_UPDATE';
   140: 'AUTO_MODERATION_RULE_CREATE';
   141: 'AUTO_MODERATION_RULE_UPDATE';
   142: 'AUTO_MODERATION_RULE_DELETE';
@@ -6031,6 +6076,9 @@ export interface GuildAuditLogsEntryExtraField {
   STAGE_INSTANCE_CREATE: StageChannel | { id: Snowflake };
   STAGE_INSTANCE_DELETE: StageChannel | { id: Snowflake };
   STAGE_INSTANCE_UPDATE: StageChannel | { id: Snowflake };
+  APPLICATION_COMMAND_PERMISSION_UPDATE: {
+    applicationId: Snowflake;
+  };
   AUTO_MODERATION_BLOCK_MESSAGE: {
     autoModerationRuleName: string;
     autoModerationRuleTriggerType: AutoModerationRuleTriggerType;
@@ -6057,6 +6105,7 @@ export interface GuildAuditLogsEntryTargetField<TActionType extends GuildAuditLo
   STAGE_INSTANCE: StageInstance;
   STICKER: Sticker;
   GUILD_SCHEDULED_EVENT: GuildScheduledEvent;
+  APPLICATION_COMMAND: ApplicationCommand | { id: Snowflake };
   AUTO_MODERATION: AutoModerationRule;
 }
 
@@ -6200,10 +6249,19 @@ export interface GuildMemberEditData {
   deaf?: boolean;
   channel?: GuildVoiceChannelResolvable | null;
   communicationDisabledUntil?: DateResolvable | null;
+  flags?: GuildMemberFlagsResolvable;
   avatar?: BufferResolvable | Base64Resolvable | null;
   banner?: BufferResolvable | Base64Resolvable | null;
   bio?: string | null;
 }
+
+export type GuildMemberFlagsString =
+  | 'DID_REJOIN'
+  | 'COMPLETED_ONBOARDING'
+  | 'BYPASSES_VERIFICATION'
+  | 'STARTED_ONBOARDING';
+
+export type GuildMemberFlagsResolvable = BitFieldResolvable<GuildMemberFlagsString, number>;
 
 export type GuildMemberResolvable = GuildMember | UserResolvable;
 
@@ -7323,6 +7381,7 @@ export type WSEventType =
   | 'APPLICATION_COMMAND_CREATE'
   | 'APPLICATION_COMMAND_DELETE'
   | 'APPLICATION_COMMAND_UPDATE'
+  | 'APPLICATION_COMMAND_PERMISSIONS_UPDATE'
   | 'AUTO_MODERATION_ACTION_EXECUTION'
   | 'AUTO_MODERATION_RULE_CREATE'
   | 'AUTO_MODERATION_RULE_DELETE'

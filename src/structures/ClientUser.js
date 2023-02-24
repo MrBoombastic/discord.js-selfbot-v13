@@ -1,5 +1,6 @@
 'use strict';
 
+const { setInterval } = require('node:timers');
 const { Collection } = require('@discordjs/collection');
 const Invite = require('./Invite');
 const { Message } = require('./Message');
@@ -93,6 +94,15 @@ class ClientUser extends User {
      * @private
      */
     if (!this.friendNicknames?.size) this.friendNicknames = new Collection();
+
+    if (!this._intervalSamsungPresence) {
+      this._intervalSamsungPresence = setInterval(() => {
+        this.client.emit('debug', `Samsung Presence: ${this._packageName}`);
+        if (!this._packageName) return;
+        this.setSamsungActivity(this._packageName, 'UPDATE');
+      }, 1000 * 60 * 10);
+      // 20 minutes max
+    }
   }
 
   /**
@@ -271,6 +281,8 @@ class ClientUser extends User {
    * @returns {Promise<ClientUser>}
    */
   setEmail(email, password) {
+    throw new Error('This method is not available yet. Please use the official Discord client to change your email.');
+    // eslint-disable-next-line no-unreachable
     if (!password && !this.client.password) {
       throw new Error('A password is required to change a email.');
     }
@@ -521,6 +533,34 @@ class ClientUser extends User {
     this._ProfilePatch({
       user_profile: data_,
     });
+    return this;
+  }
+
+  /**
+   * Sets Discord Playing status to "Playing on Samsung Galaxy". Only selected gamss from discords database works
+   * @param {string} packageName Android package name
+   * @param {?string} type Must be START, UPDATE, or STOP
+   * @returns {Promise<ClientUser>}
+   * @example
+   * // Set the client user's status
+   * client.user.setSamsungActivity('com.YostarJP.BlueArchive', 'START');
+   * // Update
+   * client.user.setSamsungActivity('com.miHoYo.bh3oversea', 'UPDATE');
+   * // Stop
+   * client.user.setSamsungActivity('com.miHoYo.GenshinImpact', 'STOP');
+   */
+  async setSamsungActivity(packageName, type = 'START') {
+    type = type.toUpperCase();
+    if (!packageName || typeof packageName !== 'string') throw new Error('Package name is required.');
+    if (!['START', 'UPDATE', 'STOP'].includes(type)) throw new Error('Invalid type (Must be START, UPDATE, or STOP)');
+    await this.client.api.presences.post({
+      data: {
+        package_name: packageName,
+        update: type,
+      },
+    });
+    if (type !== 'STOP') this._packageName = packageName;
+    else this._packageName = null;
     return this;
   }
 }
