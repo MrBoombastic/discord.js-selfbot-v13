@@ -135,62 +135,6 @@ class GuildMemberManager extends CachedManager {
     );
   }
 
-  /**
-   * Options used to fetch a single member from a guild.
-   * @typedef {BaseFetchOptions} FetchMemberOptions
-   * @property {UserResolvable} user The user to fetch
-   */
-
-  /**
-   * Options used to fetch multiple members from a guild.
-   * @typedef {Object} FetchMembersOptions
-   * @property {UserResolvable|UserResolvable[]} user The user(s) to fetch
-   * @property {?string} query Limit fetch to members with similar usernames
-   * @property {number} [limit=0] Maximum number of members to request
-   * @property {boolean} [withPresences=false] Whether or not to include the presences
-   * @property {number} [time=120e3] Timeout for receipt of members
-   * @property {?string} nonce Nonce for this request (32 characters max - default to base 16 now timestamp)
-   * @property {boolean} [force=false] Whether to skip the cache check and request the API
-   */
-
-  /**
-   * Fetches member(s) from Discord, even if they're offline.
-   * @param {UserResolvable|FetchMemberOptions|FetchMembersOptions} [options] If a UserResolvable, the user to fetch.
-   * If undefined, fetches all members.
-   * If a query, it limits the results to users with similar usernames.
-   * @returns {Promise<GuildMember|Collection<Snowflake, GuildMember>>}
-   * @example
-   * // Fetch all members from a guild
-   * guild.members.fetch()
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch a single member
-   * guild.members.fetch('66564597481480192')
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch a single member without checking cache
-   * guild.members.fetch({ user, force: true })
-   *   .then(console.log)
-   *   .catch(console.error)
-   * @example
-   * // Fetch a single member without caching
-   * guild.members.fetch({ user, cache: false })
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch by an array of users including their presences
-   * guild.members.fetch({ user: ['66564597481480192', '191615925336670208'], withPresences: true })
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch by query
-   * guild.members.fetch({ query: 'hydra', limit: 1 })
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @see {@link https://github.com/aiko-chan-ai/discord.js-selfbot-v13/blob/main/Document/FetchGuildMember.md}
-   */
   fetch(options) {
     if (!options || (typeof options === 'object' && !('user' in options) && !('query' in options))) {
       if (
@@ -199,25 +143,8 @@ class GuildMemberManager extends CachedManager {
         this.guild.members.me.permissions.has('MANAGE_ROLES')
       ) {
         return this._fetchMany();
-      } /*else {
-        return this.fetchBruteforce({
-          delay: 50,
-          skipWarn: true,
-        });
-      }*/
-    }
-    const user = this.client.users.resolveId(options);
-    if (user) return this._fetchSingle({ user, cache: true });
-    if (options.user) {
-      if (Array.isArray(options.user)) {
-        options.user = options.user.map(u => this.client.users.resolveId(u));
-        return this._fetchMany(options);
-      } else {
-        options.user = this.client.users.resolveId(options.user);
       }
-      if (!options.limit && !options.withPresences) return this._fetchSingle(options);
     }
-    return this._fetchMany(options);
   }
 
   /**
