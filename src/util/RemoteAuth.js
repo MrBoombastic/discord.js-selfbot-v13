@@ -155,6 +155,7 @@ new DiscordAuthWebsocket({
       apiVersion: 9,
       userAgent: defaultUA,
       wsProperties: defaultClientOptions.ws.properties,
+      captchaHandler: () => new Error('Captcha Handler not found. Please set captchaHandler option.'),
     };
     if (typeof options == 'object') {
       if (typeof options.debug == 'boolean') this.options.debug = options.debug;
@@ -280,7 +281,7 @@ new DiscordAuthWebsocket({
   _heartbeatAck() {
     setTimeout(() => {
       this._heartbeat();
-    }, this.heartbeatInterval);
+    }, this.heartbeatInterval).unref();
   }
   _ready(data) {
     this._logger('debug', 'Attempting server handshake...');
