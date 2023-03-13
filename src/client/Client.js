@@ -442,7 +442,7 @@ class Client extends BaseClient {
    * client.QRLogin();
    */
   QRLogin(options = {}) {
-    const QR = new DiscordAuthWebsocket(options);
+    const QR = new DiscordAuthWebsocket({ ...options, autoLogin: true });
     this.emit(Events.DEBUG, `Preparing to connect to the gateway (QR Login)`, QR);
     return QR.connect(this);
   }
@@ -1029,6 +1029,11 @@ class Client extends BaseClient {
       }
       switch (options.captchaService) {
         case '2captcha':
+          if (options.captchaKey.length !== 32) {
+            throw new TypeError('CLIENT_INVALID_OPTION', 'captchaKey', 'a 32 character string');
+          }
+          break;
+        case 'capmonster':
           if (options.captchaKey.length !== 32) {
             throw new TypeError('CLIENT_INVALID_OPTION', 'captchaKey', 'a 32 character string');
           }
