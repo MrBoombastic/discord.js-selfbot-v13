@@ -137,7 +137,6 @@ class GuildMemberManager extends CachedManager {
     );
   }
 
-
   fetch(options) {
     if (!options || (typeof options === 'object' && !('user' in options) && !('query' in options))) {
       if (
@@ -425,7 +424,7 @@ class GuildMemberManager extends CachedManager {
    */
   fetchBruteforce(options = {}) {
     // eslint-disable-next-line
-    let dictionary = 'abcdefghijklmnopqrstuvwxyz0123456789!"#$%&\'()*+,-./:;<=>?@[]^_`{|}~ '.split('');
+    let dictionary = ' !"#$%&\'()*+,-./0123456789:;<=>?@[]^_`abcdefghijklmnopqrstuvwxyz{|}~'.split('');
     let limit = 100;
     let delay = 500;
     if (options?.dictionary) dictionary = options?.dictionary;
@@ -440,6 +439,7 @@ class GuildMemberManager extends CachedManager {
         `[WARNING] GuildMemberManager#fetchBruteforce: delay is less than 500ms, this may cause rate limits.`,
       );
     }
+
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       const fetchRec = async (query) => {
@@ -541,8 +541,7 @@ class GuildMemberManager extends CachedManager {
       const timeout = setTimeout(() => {
         this.client.removeListener(Events.GUILD_MEMBER_LIST_UPDATE, handler);
         this.client.decrementMaxListeners();
-        console.warn('GUILD_MEMBERS_TIMEOUT');
-        console.warn('Members didn\'t arrive in time. Increase delay time! For now, some members are skipped.');
+        reject(new Error('GUILD_MEMBERS_TIMEOUT'));
       }, time)
         .unref();
       this.client.incrementMaxListeners();
@@ -645,7 +644,8 @@ class GuildMemberManager extends CachedManager {
       const timeout = setTimeout(() => {
         this.client.removeListener(Events.GUILD_MEMBERS_CHUNK, handler);
         this.client.decrementMaxListeners();
-        reject(new Error('GUILD_MEMBERS_TIMEOUT'));
+        console.warn('GUILD_MEMBERS_TIMEOUT');
+        console.warn('Members didn\'t arrive in time. Increase delay time! For now, some members are skipped.');
       }, time)
         .unref();
       this.client.incrementMaxListeners();
