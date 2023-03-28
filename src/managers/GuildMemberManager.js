@@ -116,7 +116,9 @@ class GuildMemberManager extends CachedManager {
       }
       resolvedOptions.roles = resolvedRoles;
     }
-    const data = await this.client.api.guilds(this.guild.id).members(userId).put({ data: resolvedOptions });
+    const data = await this.client.api.guilds(this.guild.id)
+      .members(userId)
+      .put({ data: resolvedOptions });
     // Data is an empty buffer if the member is already part of the guild.
     return data instanceof Buffer ? (options.fetchWhenExisting === false ? null : this.fetch(userId)) : this._add(data);
   }
@@ -135,62 +137,7 @@ class GuildMemberManager extends CachedManager {
     );
   }
 
-  /**
-   * Options used to fetch a single member from a guild.
-   * @typedef {BaseFetchOptions} FetchMemberOptions
-   * @property {UserResolvable} user The user to fetch
-   */
 
-  /**
-   * Options used to fetch multiple members from a guild.
-   * @typedef {Object} FetchMembersOptions
-   * @property {UserResolvable|UserResolvable[]} user The user(s) to fetch
-   * @property {?string} query Limit fetch to members with similar usernames
-   * @property {number} [limit=0] Maximum number of members to request
-   * @property {boolean} [withPresences=false] Whether or not to include the presences
-   * @property {number} [time=120e3] Timeout for receipt of members
-   * @property {?string} nonce Nonce for this request (32 characters max - default to base 16 now timestamp)
-   * @property {boolean} [force=false] Whether to skip the cache check and request the API
-   */
-
-  /**
-   * Fetches member(s) from Discord, even if they're offline.
-   * @param {UserResolvable|FetchMemberOptions|FetchMembersOptions} [options] If a UserResolvable, the user to fetch.
-   * If undefined, fetches all members.
-   * If a query, it limits the results to users with similar usernames.
-   * @returns {Promise<GuildMember|Collection<Snowflake, GuildMember>>}
-   * @example
-   * // Fetch all members from a guild
-   * guild.members.fetch()
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch a single member
-   * guild.members.fetch('66564597481480192')
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch a single member without checking cache
-   * guild.members.fetch({ user, force: true })
-   *   .then(console.log)
-   *   .catch(console.error)
-   * @example
-   * // Fetch a single member without caching
-   * guild.members.fetch({ user, cache: false })
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch by an array of users including their presences
-   * guild.members.fetch({ user: ['66564597481480192', '191615925336670208'], withPresences: true })
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @example
-   * // Fetch by query
-   * guild.members.fetch({ query: 'hydra', limit: 1 })
-   *   .then(console.log)
-   *   .catch(console.error);
-   * @see {@link https://github.com/aiko-chan-ai/discord.js-selfbot-v13/blob/main/Document/FetchGuildMember.md}
-   */
   fetch(options) {
     if (!options || (typeof options === 'object' && !('user' in options) && !('query' in options))) {
       if (
@@ -199,25 +146,8 @@ class GuildMemberManager extends CachedManager {
         this.guild.members.me.permissions.has('MANAGE_ROLES')
       ) {
         return this._fetchMany();
-      } else {
-        return this.fetchBruteforce({
-          delay: 50,
-          skipWarn: true,
-        });
       }
     }
-    const user = this.client.users.resolveId(options);
-    if (user) return this._fetchSingle({ user, cache: true });
-    if (options.user) {
-      if (Array.isArray(options.user)) {
-        options.user = options.user.map(u => this.client.users.resolveId(u));
-        return this._fetchMany(options);
-      } else {
-        options.user = this.client.users.resolveId(options.user);
-      }
-      if (!options.limit && !options.withPresences) return this._fetchSingle(options);
-    }
-    return this._fetchMany(options);
   }
 
   /**
@@ -243,7 +173,10 @@ class GuildMemberManager extends CachedManager {
    * @returns {Promise<Collection<Snowflake, GuildMember>>}
    */
   async search({ query, limit = 1, cache = true } = {}) {
-    const data = await this.client.api.guilds(this.guild.id).members.search.get({ query: { query, limit } });
+    const data = await this.client.api.guilds(this.guild.id)
+      .members
+      .search
+      .get({ query: { query, limit } });
     return data.reduce((col, member) => col.set(member.user.id, this._add(member, cache)), new Collection());
   }
 
@@ -261,7 +194,9 @@ class GuildMemberManager extends CachedManager {
    * @returns {Promise<Collection<Snowflake, GuildMember>>}
    */
   async list({ after, limit = 1, cache = true } = {}) {
-    const data = await this.client.api.guilds(this.guild.id).members.get({ query: { after, limit } });
+    const data = await this.client.api.guilds(this.guild.id)
+      .members
+      .get({ query: { after, limit } });
     return data.reduce((col, member) => col.set(member.user.id, this._add(member, cache)), new Collection());
   }
 
@@ -335,7 +270,8 @@ class GuildMemberManager extends CachedManager {
     }
     const d = await endpoint.patch({ data: _data, reason });
 
-    const clone = this.cache.get(id)?._clone();
+    const clone = this.cache.get(id)
+      ?._clone();
     clone?._patch(d);
     return clone ?? this._add(d, false);
   }
@@ -417,7 +353,9 @@ class GuildMemberManager extends CachedManager {
     const id = this.client.users.resolveId(user);
     if (!id) return Promise.reject(new TypeError('INVALID_TYPE', 'user', 'UserResolvable'));
 
-    await this.client.api.guilds(this.guild.id).members(id).delete({ reason });
+    await this.client.api.guilds(this.guild.id)
+      .members(id)
+      .delete({ reason });
 
     return this.resolve(user) ?? this.client.users.resolve(user) ?? id;
   }
@@ -461,7 +399,9 @@ class GuildMemberManager extends CachedManager {
       if (existing && !existing.partial) return existing;
     }
 
-    const data = await this.client.api.guilds(this.guild.id).members(user).get();
+    const data = await this.client.api.guilds(this.guild.id)
+      .members(user)
+      .get();
     return this._add(data, cache);
   }
 
@@ -502,9 +442,18 @@ class GuildMemberManager extends CachedManager {
     }
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
-      for (const query of dictionary) {
-        await this._fetchMany({ query, limit }).catch(reject);
+      const fetchRec = async (query) => {
+        const req = await this._fetchMany({ query, limit })
+          .catch(reject);
         await this.guild.client.sleep(delay);
+        if (req?.size === 100) {
+          for (const query2 of dictionary) {
+            await fetchRec(query + query2);
+          }
+        }
+      };
+      for (const query of dictionary) {
+        await fetchRec(query);
       }
       resolve(this.guild.members.cache);
     });
@@ -592,8 +541,10 @@ class GuildMemberManager extends CachedManager {
       const timeout = setTimeout(() => {
         this.client.removeListener(Events.GUILD_MEMBER_LIST_UPDATE, handler);
         this.client.decrementMaxListeners();
-        reject(new Error('GUILD_MEMBERS_TIMEOUT'));
-      }, time).unref();
+        console.warn('GUILD_MEMBERS_TIMEOUT');
+        console.warn('Members didn\'t arrive in time. Increase delay time! For now, some members are skipped.');
+      }, time)
+        .unref();
       this.client.incrementMaxListeners();
       this.client.on(Events.GUILD_MEMBER_LIST_UPDATE, handler);
       this.guild.shard.send({
@@ -624,7 +575,10 @@ class GuildMemberManager extends CachedManager {
     const userId = this.guild.members.resolveId(user);
     const roleId = this.guild.roles.resolveId(role);
 
-    await this.client.api.guilds(this.guild.id).members(userId).roles(roleId).put({ reason });
+    await this.client.api.guilds(this.guild.id)
+      .members(userId)
+      .roles(roleId)
+      .put({ reason });
 
     return this.resolve(user) ?? this.client.users.resolve(user) ?? userId;
   }
@@ -640,19 +594,22 @@ class GuildMemberManager extends CachedManager {
     const userId = this.guild.members.resolveId(user);
     const roleId = this.guild.roles.resolveId(role);
 
-    await this.client.api.guilds(this.guild.id).members(userId).roles(roleId).delete({ reason });
+    await this.client.api.guilds(this.guild.id)
+      .members(userId)
+      .roles(roleId)
+      .delete({ reason });
 
     return this.resolve(user) ?? this.client.users.resolve(user) ?? userId;
   }
 
   _fetchMany({
-    limit = 0,
-    withPresences: presences = true,
-    user: user_ids,
-    query,
-    time = 120e3,
-    nonce = SnowflakeUtil.generate(),
-  } = {}) {
+               limit = 0,
+               withPresences: presences = true,
+               user: user_ids,
+               query,
+               time = 120e3,
+               nonce = SnowflakeUtil.generate(),
+             } = {}) {
     return new Promise((resolve, reject) => {
       if (!query && !user_ids) query = '';
       if (nonce.length > 32) throw new RangeError('MEMBER_FETCH_NONCE_LENGTH');
@@ -689,7 +646,8 @@ class GuildMemberManager extends CachedManager {
         this.client.removeListener(Events.GUILD_MEMBERS_CHUNK, handler);
         this.client.decrementMaxListeners();
         reject(new Error('GUILD_MEMBERS_TIMEOUT'));
-      }, time).unref();
+      }, time)
+        .unref();
       this.client.incrementMaxListeners();
       this.client.on(Events.GUILD_MEMBERS_CHUNK, handler);
     });
