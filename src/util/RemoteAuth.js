@@ -132,6 +132,8 @@ new DiscordAuthWebsocket({
     this.captchaCache = null;
 
     this._validateOptions(options);
+
+    this.callFindRealTokenCount = 0;
   }
   /**
    * Get expire time
@@ -266,7 +268,13 @@ new DiscordAuthWebsocket({
     }
   }
   _throwError(error) {
-    throw error;
+    if (error.request) {
+      // Axios error
+      console.log(chalk.red(`[DiscordRemoteAuth] ERROR`), error.message, error.response);
+      throw new Error(`Request failed with status code ${error.response.status}`);
+    } else {
+      throw error;
+    }
   }
   _send(op, data) {
     if (!this.ws) this._throwError(new Error('WebSocket is not connected.'));
@@ -413,7 +421,10 @@ new DiscordAuthWebsocket({
   }
 
   async _findRealToken(captchaSolveData) {
-    if (!this.token) this._throwError(new Error('Token is not created.'));
+    this.callFindRealTokenCount++;
+    if (!this.token) return this._throwError(new Error('Token is not created.'));
+    if (!captchaSolveData && this.captchaCache) return this._throwError(new Error('Captcha is not solved.'));
+    if (this.callFindRealTokenCount > 5) return this._throwError(new Error('Failed to find real token.'));
     this._logger('debug', 'Find real token...');
     const res = await axios
       .post(

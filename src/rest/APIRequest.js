@@ -46,7 +46,6 @@ class APIRequest {
     let headers = {
       ...this.client.options.http.headers,
       Accept: '*/*',
-      origin: 'https://discord.com',
       'Accept-Language': 'en-US',
       'Sec-Fetch-Dest': 'empty',
       'Sec-Fetch-Mode': 'cors',

@@ -7,7 +7,13 @@ const getUUID = () =>
   ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, a => (a ^ ((Math.random() * 16) >> (a / 4))).toString(16));
 // Function check url valid (ok copilot)
 // eslint-disable-next-line
-const checkUrl = url => /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/.test(url);
+const checkUrl = url => {
+  try {
+    return new URL(url);
+  } catch {
+    return false;
+  }
+};
 
 class CustomStatus {
   /**
@@ -186,7 +192,7 @@ class RichPresence {
     if (!(this.assets instanceof Object)) this.assets = {};
     if (typeof image != 'string') {
       image = null;
-    } else if (checkUrl(image)) {
+    } else if (['http:', 'https:'].includes(checkUrl(image)?.protocol)) {
       // Discord URL:
       image = image
         .replace('https://cdn.discordapp.com/', 'mp:')
@@ -223,7 +229,7 @@ https://github.com/aiko-chan-ai/discord.js-selfbot-v13/blob/main/Documents/RichP
     if (!(this.assets instanceof Object)) this.assets = {};
     if (typeof image != 'string') {
       image = null;
-    } else if (checkUrl(image)) {
+    } else if (['http:', 'https:'].includes(checkUrl(image)?.protocol)) {
       // Discord URL:
       image = image
         .replace('https://cdn.discordapp.com/', 'mp:')
